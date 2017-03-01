@@ -514,7 +514,7 @@
      <string>Моделировать</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="ledLostMessagesCount">
+   <widget class="QLineEdit" name="ledReceivedMessagesCount">
     <property name="geometry">
      <rect>
       <x>1046</x>
@@ -546,7 +546,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Количество потерянных сообщений:</string>
+     <string>Количество полученных сообщений:</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btnStopModeling">
@@ -560,6 +560,41 @@
     </property>
     <property name="text">
      <string>Стоп</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_18">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>420</y>
+      <width>271</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Количество отправленных сообщений:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="ledSendedMessagesCount">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>420</y>
+      <width>171</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
@@ -578,17 +613,23 @@
     </property>
     <addaction name="btnChangeNetProp"/>
    </widget>
-   <widget class="QMenu" name="btnTest">
+   <widget class="QMenu" name="btnInformation">
     <property name="title">
-     <string>Параметры</string>
+     <string>Информация</string>
     </property>
+    <addaction name="btnAboutProgram"/>
    </widget>
-   <addaction name="btnTest"/>
    <addaction name="menu"/>
+   <addaction name="btnInformation"/>
   </widget>
   <action name="btnChangeNetProp">
    <property name="text">
     <string>Сетевые параметры</string>
+   </property>
+  </action>
+  <action name="btnAboutProgram">
+   <property name="text">
+    <string>О программе</string>
    </property>
   </action>
  </widget>

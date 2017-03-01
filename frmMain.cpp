@@ -14,8 +14,9 @@ frmMain::frmMain(QWidget *parent) :
     font.setPointSize(11);
     this->setFont(font);
 
-    // Начальная инициализация сетевых параметров имитаторов
+    // Начальная инициализация сетевых параметров имитаторов и матрицы целей
     this->setDefaults();
+    this->on_btnSetTargetsMatrix_clicked();
 
     // Присоединение сигналов к слотам
     connect(ui->btnChangeNetProp, SIGNAL(triggered()), this, SLOT(on_btnChangeNetProp_clicked()));
@@ -23,6 +24,7 @@ frmMain::frmMain(QWidget *parent) :
     connect(ui->btnInputTargetsMatrix, SIGNAL(clicked()), this, SLOT(on_btnInputTargetsMatrix_clicked()));
     connect(ui->btnStartModeling, SIGNAL(clicked()), this, SLOT(on_btnStartModeling_clicked()));
     connect(ui->btnStopModeling, SIGNAL(clicked()), this, SLOT(on_btnStopModeling_clicked()));
+    connect(ui->btnAboutProgram, SIGNAL(triggered()), this, SLOT(on_btnAboutProgram_clicked()));
     connect(udpIn, SIGNAL(readyRead()), SLOT(readMessage()));
     connect(timer, SIGNAL(timeout()), this, SLOT(on_Timer()));
 
@@ -74,7 +76,7 @@ void frmMain::setDefaults()
 
     // Настройка таймера отправки сообщений
     timer = new QTimer(this);
-    timer->setInterval(1000);
+    timer->setInterval(TIMER_INTERVAL);
 }
 
 
@@ -260,8 +262,17 @@ void frmMain::on_btnInputTargetsMatrix_clicked()
 // Слот срабатывания таймера, отправка сообщений
 void frmMain::on_Timer()
 {
-    msu_message msg = form_msg_switch_mode(imit_1, mode_set_params, ++lastSendedMessageNum);
+    msu_message msg = form_msg_switch_mode(imit_1, mode_set_params, ++lastSendedMessageNum);    
     sendMessage(imit_1, &msg);
+    ui->ledSendedMessagesCount->setText(QString::number(lastSendedMessageNum));
+    if (receivedMessagesCount == 0 && lastSendedMessageNum >= MAX_LOST_MESSAGES_IN_ROW)
+    {
+        QMessageBox::information(this,
+                                 "Ошибка сетевого соединения",
+                                 "Имитатор ИЦ-МСУ недоступен",
+                                 QMessageBox::Ok);
+        this->on_btnStopModeling_clicked();
+    }
 }
 
 
@@ -271,8 +282,8 @@ void frmMain::on_btnStartModeling_clicked()
 {
     lastSendedMessageNum = 0;
     lastRecievedMessageNum = 0;
-    lostMessagesNum = 0;
-    ui->ledLostMessagesCount->setText("0");
+    receivedMessagesCount = 0;
+    ui->ledReceivedMessagesCount->setText("0");
     QString fileName = "D:/Temp/"
             + (new QDate())->currentDate().toString("yyyy.MM.dd") + "_"
             + (new QTime())->currentTime().toString("hh:mm:ss") + ".txt";
@@ -305,6 +316,19 @@ void frmMain::on_btnSendMessage_clicked()
 
 
 //--------------------------------------------------------------------------------------
+// Слот нажатия кнопки "О программе"
+void frmMain::on_btnAboutProgram_clicked()
+{
+    QMessageBox::information(this,
+                             "О программе",
+                             "Специальное программное обеспечение удалённого управления \
+                             и регистрации данных имитатора ИЦ-МСУ\r\n\r\n \
+                             Версия 1.0 от 20.12.2016",
+                             QMessageBox::Ok);
+}
+
+
+//--------------------------------------------------------------------------------------
 // Слот чтения сообщения UDP
 void frmMain::readMessage()
 {
@@ -315,16 +339,9 @@ void frmMain::readMessage()
         udpIn->readDatagram((char*)&buff.front(), udpIn->pendingDatagramSize(), &sender);
 
         msu_message msg = to_msu_message(buff, prop->endianness);
+        ui->ledReceivedMessagesCount->setText(QString::number(++receivedMessagesCount));
 
-        if (msg.packet_number - lastRecievedMessageNum > 1)
-        {
-            lostMessagesNum++;
-            ui->ledLostMessagesCount->setText(QString::number(lostMessagesNum));
-        }
-        if (msg.packet_number > lastRecievedMessageNum)
-        {
-            lastRecievedMessageNum = msg.packet_number;
-        }
+        lastRecievedMessageNum = msg.packet_number;
 
         writeMessageToFile(&msg);
 
@@ -390,10 +407,10 @@ void frmMain::sendMessage(uint32_t imit_num, msu_message *msg)
 void frmMain::writeMessageToFile(msu_message *msg)
 {
     tlmFile->write(QString("Message #%1:\r\n").arg(lastSendedMessageNum
-                                                   + lastRecievedMessageNum).toUtf8());
+                                                   + receivedMessagesCount).toUtf8());
     tlmFile->write(QString("Header: %1\r\n").arg(msg->header_int).toUtf8());
     tlmFile->write(QString("Data: ").toUtf8());
-    for (int i = 0; i < msg->data.size(); ++i)
+    for (uint i = 0; i < msg->data.size(); ++i)
     {
         tlmFile->write(QString("%1").arg(msg->data[i]).toUtf8());
     }
